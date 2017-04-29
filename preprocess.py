@@ -32,6 +32,9 @@ class MatrixMaker(object):
         
         col_map: dict
             same as row_map
+
+        mode: string
+            determines which type of matrix to use
     """
     def __init__(self, array, columns, threshold=50, mode='scipy'):
         """
@@ -110,7 +113,7 @@ class MatrixMaker(object):
         """
         shape = (len(self.row_map), len(self.col_map))
         
-        if self.mode == 'scipy':
+        if self.mode == 'numpy':
             output = np.zeros(shape, dtype=float)
             output.fill(np.nan) # fill with 0.01??
             extra = 0
