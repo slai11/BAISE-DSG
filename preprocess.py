@@ -32,6 +32,9 @@ class MatrixMaker(object):
         
         col_map: dict
             same as row_map
+
+        mode: string
+            determines which type of matrix to use
     """
     def __init__(self, array, columns, threshold=50, mode='scipy'):
         """
@@ -60,18 +63,26 @@ class MatrixMaker(object):
     def get_matrix(self):
         return self.matrix
 
-    def store_post_fac_matrix(self, matrix):
-        self.post_matrix = matrix
 
-    def get_value(self, row_idx, col_idx):
+    def get_pos(self, row_idx, col_idx):
         i = self.row_map.get(row_idx)
         j = self.col_map.get(col_idx)
 
-        if self.post_matrix:
-            return self.post_matrix[i,j]
-        else:
-            print('Post-factorised matrix not stored')
-            return None
+        return (i,j)
+
+
+#    def store_post_fac_matrix(self, matrix):
+#        self.post_matrix = matrix
+#
+#    def get_value(self, row_idx, col_idx):
+#        i = self.row_map.get(row_idx)
+#        j = self.col_map.get(col_idx)
+#
+#        if self.post_matrix:
+#            return self.post_matrix[i,j]
+#        else:
+#            print('Post-factorised matrix not stored')
+#            return None
 
     def _build(self):
         """filter by threshold level then builds output matrix
@@ -110,7 +121,7 @@ class MatrixMaker(object):
         """
         shape = (len(self.row_map), len(self.col_map))
         
-        if self.mode == 'scipy':
+        if self.mode == 'numpy':
             output = np.zeros(shape, dtype=float)
             output.fill(np.nan) # fill with 0.01??
             extra = 0
