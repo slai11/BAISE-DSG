@@ -13,9 +13,21 @@ PREDICTIONS_FILE_PATH = "data/test_predict.csv"
 
 class SurpriseFeatureBuilder():
 	def __init__(self, train_file_path, test_file_path, surprise_file_path, predictions_file_path, item_identifier='media_id'):
-		"""
+		"""SupriseFeatureBuilder formats data for ingesting and uses SVD to build a feature for a given item_identifier.
 
 		Attributes:
+			train_file_path: string
+				train file
+
+			test_file_path: string
+				test file
+
+			surprise_file_path: string
+				output filtered data to this location. to be read by Surprise
+
+			predictions_file_path: string
+				output location to store predictions
+				
 	        item_identifier: string {'media_id', 'genre_id', 'artist_id', 'album_id'}
 	            column names from df to specify which item to match users against 
 	    """
