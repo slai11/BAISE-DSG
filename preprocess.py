@@ -63,18 +63,26 @@ class MatrixMaker(object):
     def get_matrix(self):
         return self.matrix
 
-    def store_post_fac_matrix(self, matrix):
-        self.post_matrix = matrix
 
-    def get_value(self, row_idx, col_idx):
+    def get_pos(self, row_idx, col_idx):
         i = self.row_map.get(row_idx)
         j = self.col_map.get(col_idx)
 
-        if self.post_matrix:
-            return self.post_matrix[i,j]
-        else:
-            print('Post-factorised matrix not stored')
-            return None
+        return (i,j)
+
+
+#    def store_post_fac_matrix(self, matrix):
+#        self.post_matrix = matrix
+#
+#    def get_value(self, row_idx, col_idx):
+#        i = self.row_map.get(row_idx)
+#        j = self.col_map.get(col_idx)
+#
+#        if self.post_matrix:
+#            return self.post_matrix[i,j]
+#        else:
+#            print('Post-factorised matrix not stored')
+#            return None
 
     def _build(self):
         """filter by threshold level then builds output matrix
