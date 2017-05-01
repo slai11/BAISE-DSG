@@ -108,9 +108,12 @@ class SurpriseFeatureBuilder():
         # gets predictions
         lst_length = len(user_lst)
 
-        # true value is unknown but imputed as 0 for now
-        pred = [self.svd.predict(str(user_lst[idx]), str(item_lst[idx]), 0) for idx in range(lst_length)]
+        pred = [self.svd.predict(str(user_lst[idx]), str(item_lst[idx])) for idx in range(lst_length)]
         prediction, unseen = zip(*([(est, details['was_impossible']) for (_, _, _, est, details) in pred]))
+
+        # Replace unseen with number 0, 1, 2 based on whether user, item
+        unseen = [sum([self.svd.trainset.knows_user(user_lst[i]), 
+                       self.svd.trainset.knows_item(item_lst[i])]) for i in range(len(user_lst))]
         return prediction, unseen
 
     def get_predictions(self, test_file_path):
@@ -126,7 +129,7 @@ class SurpriseFeatureBuilder():
         return {"{}_svd".format(self.item_identifier): predictions,
                 "{}_unseen".format(self.item_identifier): unseen}
 
-def make_sfb(item_identifier, train_file_path, user_min_occurrence=20, item_min_occurrence=20):
+def make_sfb(item_identifier, train_file_path, model_name="", user_min_occurrence=20, item_min_occurrence=20):
     """Make a SurpriseFeatureBuilder trained on the given file
 
     Arguments:
@@ -146,8 +149,9 @@ def make_sfb(item_identifier, train_file_path, user_min_occurrence=20, item_min_
         sfb: SurpriseFeatureBuilder object
             sfb trained on train file
     """
+    model_pickle_name = "{}_{}.p".format(model_name, item_identifier)
     try:
-        sfb = pickle.load(open( "{}.p".format(item_identifier), "rb" ))
+        sfb = pickle.load(open(model_pickle_name, "rb" ))
     except FileNotFoundError:
         sfb = SurpriseFeatureBuilder(item_identifier, train_file_path, 
             SURPRISE_FILE_PATH.format(item_identifier), 
@@ -156,10 +160,10 @@ def make_sfb(item_identifier, train_file_path, user_min_occurrence=20, item_min_
         sfb.read_data()
         sfb.train()
         sfb.delete_surprise_file()
-        pickle.dump(sfb, open("{}.p".format(item_identifier), "wb"))
+        pickle.dump(sfb, open(model_pickle_name, "wb"))
     return sfb
 
 if __name__ == '__main__':
-    media_sfb = make_sfb('media_id', TRAIN_FILE_PATH, user_min_occurrence=3000, item_min_occurrence=20)
+    media_sfb = make_sfb('genre_id', TRAIN_FILE_PATH, user_min_occurrence=3000, item_min_occurrence=20)
     d = media_sfb.get_predictions(TEST_FILE_PATH)
 
