@@ -84,8 +84,8 @@ class SurpriseFeatureBuilder():
         print_perf(perf)
 
     def parameter_tuning(self):
-        param_grid = {'n_epochs': [10, 20, 40], 'lr_all': [0.002, 0.005, 0.01],
-                      'reg_all': [0.05, 0.1, 0.2]}
+        param_grid = {'n_epochs': [20, 40], 'lr_all': [0.002, 0.005],
+                      'reg_all': [0.01, 0.02, 0.04], 'n_factors': [20, 50, 100]}
 
         print("Starting grid search...")
         start_time = time.perf_counter()
@@ -164,6 +164,7 @@ def make_sfb(item_identifier, train_file_path, model_name="", user_min_occurrenc
     return sfb
 
 if __name__ == '__main__':
-    media_sfb = make_sfb('genre_id', TRAIN_FILE_PATH, user_min_occurrence=3000, item_min_occurrence=20)
-    d = media_sfb.get_predictions(TEST_FILE_PATH)
+    media_sfb = make_sfb('media_id', TRAIN_FILE_PATH, user_min_occurrence=20, item_min_occurrence=20)
+    media_sfb.parameter_tuning()
+    pickle.dump(sfb, open(model_pickle_name, "wb"))
 
