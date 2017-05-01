@@ -31,7 +31,7 @@ def lightgbm_model(X, y):
         'num_leaves': 256,
         'max_depth': 7,
         'feature_fraction': 1,
-        'bagging_fraction': 0.5,
+        'bagging_fraction': 0.8,
         'bagging_freq': 1,
         'objective':'binary',
     }

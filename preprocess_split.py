@@ -46,7 +46,7 @@ if __name__ == '__main__':
     test_output.to_csv(OUTPUT_TEST_FILE_PATH )
     train = train_output.sample(frac = 0.5)
     train.to_csv(OUTPUT_TRAIN_TEST_PATH)
-    test = df.drop(train.index)
+    test = train_output.drop(train.index)
     test.to_csv(OUTPUT_TRAIN_EMSEMBLE_PATH)
 
 

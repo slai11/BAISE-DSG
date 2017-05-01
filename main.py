@@ -12,18 +12,18 @@ import lightgbm as lgb
 
 if __name__ == '__main__':
     
-    train_path = 'data/train.csv'
-    val_path = train_path
-    test_path = 'data/test.csv'
+    train_path = 'data/train_test.csv'
+    val_path = 'data/train_ensemble.csv'
+    test_path = 'data/test_clean.csv'
     
-    firsttime=False
+    firsttime=True
     if firsttime:
         training_pipe = Pipe(train_path, val_path)
-        train = training_pipe.make('train')
+        train = training_pipe.make('pickle/train')
         train.to_csv('train_feature.csv', index=False)
 
-        testing_pipe = Pipe(train_path, test_path)
-        test = testing_pipe.make('test')
+        testing_pipe = Pipe(val_path, test_path)
+        test = testing_pipe.make('pickle/test')
         test.to_csv('test_features.csv', index=False)
     else:
         train = pd.read_csv('train_feature.csv')
