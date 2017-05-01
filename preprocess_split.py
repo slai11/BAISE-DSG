@@ -20,19 +20,15 @@ OUTPUT_TEST_FILE_PATH = "./data/test_clean.csv"
 OUTPUT_TRAIN_TEST_PATH = "./data/train_test.csv"
 OUTPUT_TRAIN_EMSEMBLE_PATH = "./data/train_ensemble.csv"
 
-
 def add_fresh(df):
-    freshness= []
-    for nrow in range (len(df.index)):
-        #release_date
-        td1 = df["release_date"][nrow]
-        td1 = datetime.strptime(str(td1), "%Y%m%d").date()
-        #ts_listen
-        td2 = datetime.fromtimestamp(int(df["ts_listen"][nrow])).date()
-        curr = int((td2 - td1).days)
-        freshness.append(curr)
-        print(nrow)
-    df['freshness'] = freshness
+    """Add freshness attribute to dataframe. 
+
+    Freshness is computed by taking the difference in days between ts_listen and release date
+    """
+    release_date = train_df['release_date'].apply(lambda x: datetime.strptime(str(x), "%Y%m%d").date())
+    ts_listen = train_df['ts_listen'].apply(lambda x: datetime.fromtimestamp(int(x)).date())
+    freshness = (ts_listen - release_date).apply(lambda x: int(x.days))
+    df = df.assign(freshness=freshness)
     return df
 
 if __name__ == '__main__':
@@ -46,7 +42,7 @@ if __name__ == '__main__':
     test_output.to_csv(OUTPUT_TEST_FILE_PATH )
     train = train_output.sample(frac = 0.5)
     train.to_csv(OUTPUT_TRAIN_TEST_PATH)
-    test = train_output.drop(train.index)
+    test = df.drop(train.index)
     test.to_csv(OUTPUT_TRAIN_EMSEMBLE_PATH)
 
 
