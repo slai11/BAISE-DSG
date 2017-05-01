@@ -15,6 +15,7 @@ class Pipe(object):
         """uses surprise feature builder to make new features
         """
         for item in self.items:
+            print("Building features for {} now.".format(item))
             temp_sfb = make_sfb(item, self.train_path, model_name)
             ui_feat = temp_sfb.get_predictions(self.test_path)
             self.df = self.df.assign(**ui_feat)
