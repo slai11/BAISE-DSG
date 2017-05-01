@@ -1,7 +1,7 @@
 import pandas as pd
 import csv
 from build_svd_features import *
-
+import pdb
 
 class Pipe(object):
 
@@ -9,18 +9,19 @@ class Pipe(object):
         self.train_path = train
         self.test_path = test
         self.items = items
-        self.df = pd.read_csv(test_path)
+        self.df = pd.read_csv(self.test_path)
     
-    def make(self):
+    def make(self, model_name):
         """uses surprise feature builder to make new features
         """
         for item in self.items:
-            temp_sfb = make_sfb(item, self.train_path)
+            print("Building features for {} now.".format(item))
+            temp_sfb = make_sfb(item, self.train_path, model_name)
             ui_feat = temp_sfb.get_predictions(self.test_path)
-            self.df.assign(ui_feat)
-            self.df.drop(item)
-
-        self.df.drop('user_id')
+            self.df = self.df.assign(**ui_feat)
+            self.df.drop(item, axis=1, inplace=True)
+            
+        self.df.drop('user_id', axis=1, inplace=True)
         return self.df
 
 if __name__ == '__main__':
