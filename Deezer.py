@@ -1,4 +1,4 @@
-iport time
+import time
 import requests
 import json
 import pdb
@@ -60,8 +60,8 @@ class DeezerAPI(object):
 
         check if file exist
         """
-        filepath = 'data/archive/{}_apimul.json'.format(self.attr)
-        total = pd.read_csv('data/train.csv')[self.col].unique().tolist()
+        filepath = 'data/deezer/{}_api.json'.format(self.attr)
+        total = pd.read_csv('data/archive/train.csv')[self.col].unique().tolist()
         id_list = sorted(total, key=int)
  
         if os.path.exists(filepath):
@@ -71,19 +71,17 @@ class DeezerAPI(object):
             print("File exists with {} entries, will take from {}".format(len(self.attr_json),filepath))
             
             downloaded_id_list = list(self.attr_json.keys())
-            marker = len(downloaded_id_list)-1
-            if marker == -1:
-                market = 0
-            assert(id_list[marker] == int(downloaded_id_list[-1]))
+            downloaded_id_list = list(map(lambda x: int(x), downloaded_id_list))
             
-            # Keep ids which JSON file does not have
-            id_list = id_list[marker:-1]
+            # Retain those that have yet to be downloaded
+            id_list = list(set(total) - set(downloaded_id_list))
+            pdb.set_trace()
             assert((len(id_list) + len(downloaded_id_list) == len(total)))
         else:
             self.attr_json = {}
        
         if id_list: 
-            #id_list = id_list[0:100000] # optional shortening of id-list
+            id_list = id_list[0:100000] # optional shortening of id-list
             self._download_w_multithread(id_list, filepath)
 
     def _download(self, id_list, filepath):
@@ -123,13 +121,13 @@ class DeezerAPI(object):
             def run(self):
                 """"Runs download one time from queue"""
                 while True:
-                    thing = self.queue.get()
-                    self.__download_single(thing)
+                    item, request = self.queue.get()
+                    self.__download_single(item, request)
                     self.queue.task_done()
 
-            def __download_single(self, item_id):
+            def __download_single(self, item_id, request):
                 """Downloads 1 item's worth of detail and load into dict """
-                query = '/'.join(['https://api.deezer.com/user', str(item_id)])
+                query = '/'.join([request, str(item_id)])
                 res = requests.get(query)
                 res = res.json()
                 attr_json[res.get('id')] = res
@@ -141,12 +139,13 @@ class DeezerAPI(object):
             thread = MyThread(queue)
             thread.daemon = True
             thread.start()
+        print("Created 10 threads")
 
         # Push all into queue
         for i, item_id in enumerate(id_list):
-            queue.put(item_id)
+            queue.put((item_id,self.request_url))
                         
-        print("Assigned Threads")
+        print("Assigned jobs to queue")
         
         # Checks length and input to JSON file every 1 minute
         while queue.qsize() != 0:
@@ -160,9 +159,10 @@ class DeezerAPI(object):
 
 if __name__ == '__main__':
     deezer = DeezerAPI('track', 'media_id')
-    deezer = DeezerAPI('user', 'user_id') #1 guy do this   
-    deezer = DeezerAPI('album', 'album_id') #1 guy do this
-    deezer = DeezerAPI('artist', 'artist_id') #1 guy do this
-    deezer = DeezerAPI('genre', 'genre_id') #1 guy do this
+#    deezer = DeezerAPI('user', 'user_id') #1 guy do this   
+ #   deezer = DeezerAPI('album', 'album_id') #1 guy do this
+  #  deezer = DeezerAPI('artist', 'artist_id') #1 guy do this
+   # deezer = DeezerAPI('genre', 'genre_id') #1 guy do this
+
 
 
