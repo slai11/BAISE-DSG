@@ -25,10 +25,20 @@ def add_fresh(df):
 
     Freshness is computed by taking the difference in days between ts_listen and release date
     """
-    release_date = train_df['release_date'].apply(lambda x: datetime.strptime(str(x), "%Y%m%d").date())
-    ts_listen = train_df['ts_listen'].apply(lambda x: datetime.fromtimestamp(int(x)).date())
+    release_date = df['release_date'].apply(lambda x: datetime.strptime(str(x), "%Y%m%d").date())
+    ts_listen = df['ts_listen'].apply(lambda x: datetime.fromtimestamp(int(x)).date())
     freshness = (ts_listen - release_date).apply(lambda x: int(x.days))
     df = df.assign(freshness=freshness)
+    return df
+
+def add_user_item_count(df, item_identifier):
+    """Add user item count to dataframe. 
+
+    User item count is number of times user-item pairs. This indicates the amount of information given to
+    the SVD model.
+    """
+    user_item_count = df.groupby('user_id', item_identifier)['is_listened'].transform('count')
+    df = df.assign(**{'user_{}'.format(item_identifier)})
     return df
 
 if __name__ == '__main__':
