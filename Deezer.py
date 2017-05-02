@@ -75,13 +75,12 @@ class DeezerAPI(object):
             
             # Retain those that have yet to be downloaded
             id_list = list(set(total) - set(downloaded_id_list))
-            pdb.set_trace()
             assert((len(id_list) + len(downloaded_id_list) == len(total)))
         else:
             self.attr_json = {}
        
         if id_list: 
-            id_list = id_list[0:100000] # optional shortening of id-list
+            #id_list = id_list[0:100000] # optional shortening of id-list
             self._download_w_multithread(id_list, filepath)
 
     def _download(self, id_list, filepath):
@@ -158,11 +157,11 @@ class DeezerAPI(object):
 
 
 if __name__ == '__main__':
-    deezer = DeezerAPI('track', 'media_id')
-#    deezer = DeezerAPI('user', 'user_id') #1 guy do this   
- #   deezer = DeezerAPI('album', 'album_id') #1 guy do this
-  #  deezer = DeezerAPI('artist', 'artist_id') #1 guy do this
-   # deezer = DeezerAPI('genre', 'genre_id') #1 guy do this
+#    deezer = DeezerAPI('track', 'media_id')
+   # deezer = DeezerAPI('user', 'user_id') #1 guy do this   
+    #deezer = DeezerAPI('album', 'album_id') #1 guy do this
+    #deezer = DeezerAPI('artist', 'artist_id') #1 guy do this
+    deezer = DeezerAPI('genre', 'genre_id') #1 guy do this
 
 
 
