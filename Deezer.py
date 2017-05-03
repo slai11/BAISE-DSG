@@ -68,9 +68,11 @@ class DeezerAPI(object):
             # open and add on
             with open(filepath) as data:
                 self.attr_json = json.load(data)
-            print("File exists with {} entries, will take from {}".format(len(self.attr_json),filepath))
             
-            downloaded_id_list = list(self.attr_json.keys())
+            print("File exists with {} entries, will take from {}".format(len(self.attr_json), filepath))
+            
+            downloaded_id_list = list(self.attr_json.keys())            
+            downloaded_id_list = list(filter(lambda x: x!='null', downloaded_id_list))
             downloaded_id_list = list(map(lambda x: int(x), downloaded_id_list))
             
             # Retain those that have yet to be downloaded
@@ -145,23 +147,29 @@ class DeezerAPI(object):
             queue.put((item_id,self.request_url))
                         
         print("Assigned jobs to queue")
-        
+        try:
         # Checks length and input to JSON file every 1 minute
-        while queue.qsize() != 0:
-            time.sleep(60)
-            print(len(attr_json))
+            while queue.qsize() != 0:
+                time.sleep(60)
+                print(len(attr_json))
+                self.attr_json.update(attr_json)
+                print("Writing file of length {}".format(len(self.attr_json)))
+                with open(filepath, 'w') as outfile:
+                    json.dump(self.attr_json, outfile)
+                print("File written")
+        except KeyboardInterrupt:
             self.attr_json.update(attr_json)
+            print("Writing file of length {}".format(len(self.attr_json)))
             with open(filepath, 'w') as outfile:
                 json.dump(self.attr_json, outfile)
-
-
+            print("Safe to exit")
 
 if __name__ == '__main__':
-#    deezer = DeezerAPI('track', 'media_id')
+    deezer = DeezerAPI('track', 'media_id')
    # deezer = DeezerAPI('user', 'user_id') #1 guy do this   
     #deezer = DeezerAPI('album', 'album_id') #1 guy do this
     #deezer = DeezerAPI('artist', 'artist_id') #1 guy do this
-    deezer = DeezerAPI('genre', 'genre_id') #1 guy do this
+    #deezer = DeezerAPI('genre', 'genre_id') #1 guy do this
 
 
 
