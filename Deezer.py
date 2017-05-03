@@ -60,7 +60,7 @@ class DeezerAPI(object):
 
         check if file exist
         """
-        filepath = 'data/deezer/{}_api2.json'.format(self.attr)
+        filepath = 'data/deezer/{}_api.json'.format(self.attr)
         total = pd.read_csv('data/archive/train.csv')[self.col].unique().tolist()
         id_list = sorted(total, key=int)
  
@@ -90,21 +90,27 @@ class DeezerAPI(object):
         """
         Calls to deezer api and get info
         """
-        start = time.time()
-        for i, item_id in enumerate(id_list):
-            query = '/'.join([self.request_url, str(item_id)])
-            res = requests.get(query)
-            res = res.json()
-            self.attr_json[res.get('id')] = res
+        try:
+            start = time.time()
+            for i, item_id in enumerate(id_list):
+                query = '/'.join([self.request_url, str(item_id)])
+                res = requests.get(query)
+                try:
+                    res = res.json()
+                except:
+                    pdb.set_trace()
+                self.attr_json[res.get('id')] = res
 
-            print(i)
+                print(i)
             
-            if i % 1000 == 0 and i > 0:
-                print("Took {}s to run 1000 queries -- wrote and saved {} more to json".format((time.time() - start), i))
-                start = time.time()
-                with open(filepath, 'w') as outfile:
-                    json.dump(self.attr_json, outfile)
-
+                if i % 1000 == 0 and i > 0:
+                    print("Took {}s to run 1000 queries -- wrote and saved {} more to json".format((time.time() - start), i))
+                    start = time.time()
+                    with open(filepath, 'w') as outfile:
+                        json.dump(self.attr_json, outfile)
+        except KeyboardInterrupt:
+            with open(filepath, 'w') as outfile:
+                json.dump(self.attr_json, outfile)
     
     def _download_w_multithread(self, id_list, filepath):
         """Calls to deezer api and get info using 10 threads
@@ -134,15 +140,20 @@ class DeezerAPI(object):
                 #adapter = requests.adapters.HTTPAdapter(max_retries=MAX_RETRIES)
                 #session.mount('https://', adapter)
                 #session.mount('http://', adapter)
-                query = '/'.join([request, str(item_id)])
-                res = requests.get(query)
-                res = res.json()
-                attr_json[res.get('id')] = res
+                try:
+                    query = '/'.join([request, str(item_id)])
+                    res = requests.get(query)
+                    res = res.json()
+                    attr_json[res.get('id')] = res
+                except:
+                    print("{} needs to redo".format(item_id))
+                    time.sleep(1)
+                    self.__download_single(item_id, request)
 
         queue = Queue()
         
         # Initialise threads
-        for i in range(3):
+        for i in range(10):
             thread = MyThread(queue)
             thread.daemon = True
             thread.start()
@@ -156,7 +167,7 @@ class DeezerAPI(object):
         try:
         # Checks length and input to JSON file every 1 minute
             while queue.qsize() != 0:
-                time.sleep(60)
+                time.sleep(10)
                 print(len(attr_json))
             
             print("DONE")
@@ -165,6 +176,7 @@ class DeezerAPI(object):
             with open(filepath, 'w') as outfile:
                 json.dump(self.attr_json, outfile)
             print("File written")
+        
         except KeyboardInterrupt:
             self.attr_json.update(attr_json)
             print("Writing file of length {}".format(len(self.attr_json)))
