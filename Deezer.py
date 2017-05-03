@@ -173,11 +173,11 @@ class DeezerAPI(object):
             print("Safe to exit")
         
 if __name__ == '__main__':
-    deezer = DeezerAPI('track', 'media_id')
-   # deezer = DeezerAPI('user', 'user_id') #1 guy do this   
+    #deezer = DeezerAPI('track', 'media_id')
+    deezer = DeezerAPI('user', 'user_id') #1 guy do this   
     #deezer = DeezerAPI('album', 'album_id') #1 guy do this
-   # deezer = DeezerAPI('artist', 'artist_id') #1 guy do this
-    #deezer = DeezerAPI('genre', 'genre_id') #1 guy do this
+    deezer = DeezerAPI('artist', 'artist_id') #1 guy do this
+    deezer = DeezerAPI('genre', 'genre_id') #1 guy do this
 
 
 
