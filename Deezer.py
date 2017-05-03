@@ -60,7 +60,7 @@ class DeezerAPI(object):
 
         check if file exist
         """
-        filepath = 'data/deezer/{}_api.json'.format(self.attr)
+        filepath = 'data/deezer/{}_api2.json'.format(self.attr)
         total = pd.read_csv('data/archive/train.csv')[self.col].unique().tolist()
         id_list = sorted(total, key=int)
  
@@ -152,23 +152,25 @@ class DeezerAPI(object):
             while queue.qsize() != 0:
                 time.sleep(60)
                 print(len(attr_json))
-                self.attr_json.update(attr_json)
-                print("Writing file of length {}".format(len(self.attr_json)))
-                with open(filepath, 'w') as outfile:
-                    json.dump(self.attr_json, outfile)
-                print("File written")
         except KeyboardInterrupt:
             self.attr_json.update(attr_json)
             print("Writing file of length {}".format(len(self.attr_json)))
             with open(filepath, 'w') as outfile:
                 json.dump(self.attr_json, outfile)
             print("Safe to exit")
-
+        
+        print("DONE")
+        self.attr_json.update(attr_json)
+        print("Writing file of length {}".format(len(self.attr_json)))
+        with open(filepath, 'w') as outfile:
+            json.dump(self.attr_json, outfile)
+        print("File written")
+ 
 if __name__ == '__main__':
     deezer = DeezerAPI('track', 'media_id')
    # deezer = DeezerAPI('user', 'user_id') #1 guy do this   
     #deezer = DeezerAPI('album', 'album_id') #1 guy do this
-    #deezer = DeezerAPI('artist', 'artist_id') #1 guy do this
+   # deezer = DeezerAPI('artist', 'artist_id') #1 guy do this
     #deezer = DeezerAPI('genre', 'genre_id') #1 guy do this
 
 
