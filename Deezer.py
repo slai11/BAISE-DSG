@@ -6,7 +6,6 @@ import csv
 import os
 import pandas as pd
 import numpy as np
-
 from queue import Queue
 import threading
 
@@ -36,8 +35,9 @@ class DeezerAPI(object):
         """
         self.attr = attribute_name
         self.col = colname
-        self.api = 'https://api.deezer.com/'
+        self.api = 'https://api.deezer.com'
         self.request_url = '/'.join([self.api, self.attr])
+        
         self._load()
 
     # PUBLIC METHODS
@@ -60,7 +60,7 @@ class DeezerAPI(object):
 
         check if file exist
         """
-        filepath = 'data/deezer/{}_api.json'.format(self.attr)
+        filepath = 'data/deezer/{}_api2.json'.format(self.attr)
         total = pd.read_csv('data/archive/train.csv')[self.col].unique().tolist()
         id_list = sorted(total, key=int)
  
@@ -68,9 +68,11 @@ class DeezerAPI(object):
             # open and add on
             with open(filepath) as data:
                 self.attr_json = json.load(data)
-            print("File exists with {} entries, will take from {}".format(len(self.attr_json),filepath))
             
-            downloaded_id_list = list(self.attr_json.keys())
+            print("File exists with {} entries, will take from {}".format(len(self.attr_json), filepath))
+            
+            downloaded_id_list = list(self.attr_json.keys())            
+            downloaded_id_list = list(filter(lambda x: x!='null', downloaded_id_list))
             downloaded_id_list = list(map(lambda x: int(x), downloaded_id_list))
             
             # Retain those that have yet to be downloaded
@@ -82,6 +84,7 @@ class DeezerAPI(object):
         if id_list: 
             #id_list = id_list[0:100000] # optional shortening of id-list
             self._download_w_multithread(id_list, filepath)
+            #self._download_w_tornado(id_list, filepath)
 
     def _download(self, id_list, filepath):
         """
@@ -126,6 +129,11 @@ class DeezerAPI(object):
 
             def __download_single(self, item_id, request):
                 """Downloads 1 item's worth of detail and load into dict """
+                MAX_RETRIES = 5
+                #session = requests.Session()
+                #adapter = requests.adapters.HTTPAdapter(max_retries=MAX_RETRIES)
+                #session.mount('https://', adapter)
+                #session.mount('http://', adapter)
                 query = '/'.join([request, str(item_id)])
                 res = requests.get(query)
                 res = res.json()
@@ -134,7 +142,7 @@ class DeezerAPI(object):
         queue = Queue()
         
         # Initialise threads
-        for i in range(10):
+        for i in range(3):
             thread = MyThread(queue)
             thread.daemon = True
             thread.start()
@@ -145,23 +153,31 @@ class DeezerAPI(object):
             queue.put((item_id,self.request_url))
                         
         print("Assigned jobs to queue")
-        
+        try:
         # Checks length and input to JSON file every 1 minute
-        while queue.qsize() != 0:
-            time.sleep(60)
-            print(len(attr_json))
+            while queue.qsize() != 0:
+                time.sleep(60)
+                print(len(attr_json))
+            
+            print("DONE")
             self.attr_json.update(attr_json)
+            print("Writing file of length {}".format(len(self.attr_json)))
             with open(filepath, 'w') as outfile:
                 json.dump(self.attr_json, outfile)
-
-
-
+            print("File written")
+        except KeyboardInterrupt:
+            self.attr_json.update(attr_json)
+            print("Writing file of length {}".format(len(self.attr_json)))
+            with open(filepath, 'w') as outfile:
+                json.dump(self.attr_json, outfile)
+            print("Safe to exit")
+        
 if __name__ == '__main__':
-#    deezer = DeezerAPI('track', 'media_id')
+    deezer = DeezerAPI('track', 'media_id')
    # deezer = DeezerAPI('user', 'user_id') #1 guy do this   
     #deezer = DeezerAPI('album', 'album_id') #1 guy do this
-    #deezer = DeezerAPI('artist', 'artist_id') #1 guy do this
-    deezer = DeezerAPI('genre', 'genre_id') #1 guy do this
+   # deezer = DeezerAPI('artist', 'artist_id') #1 guy do this
+    #deezer = DeezerAPI('genre', 'genre_id') #1 guy do this
 
 
 
