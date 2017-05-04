@@ -13,7 +13,7 @@ SURPRISE_FILE_PATH = "data/{}-train_surprise_format.csv"
 
 class SurpriseFeatureBuilder():
     def __init__(self, item_identifier='media_id', train_file_path=TRAIN_FILE_PATH, surprise_file_path=SURPRISE_FILE_PATH, 
-        user_min_occurrence=20, item_min_occurrence=20):
+        user_min_occurrence=20, item_min_occurrence=20, no_of_folds=5):
         """SupriseFeatureBuilder formats data for ingesting and uses SVD to build a feature for a given item_identifier.
 
         Arguments:     
@@ -31,13 +31,20 @@ class SurpriseFeatureBuilder():
 
             item_min_occurrence: int
                 item must appear at least this number of times to be included
+
+            no_of_folds: int
+                number of folds that the data is split for training
         """
         self.train_file_path = train_file_path
         self.surprise_file_path = surprise_file_path
         self.item_identifier = item_identifier
         self.user_min_occurrence = user_min_occurrence
         self.item_min_occurrence = item_min_occurrence
-        self.svd = SVD()
+        self.svds = [SVD() for _ in range(no_of_folds)]
+        self.no_of_folds = no_of_folds
+
+        if no_of_folds < 2:
+            raise ValueError("number of folds must be at least 2")
 
     def make_surprise_file(self, user_min_occurrence=None, item_min_occurrence=None):
         """Generates file to be ingested by Surprise.
@@ -75,59 +82,87 @@ class SurpriseFeatureBuilder():
 
     def read_data(self):
         reader = dataset.Reader(line_format="user item rating", sep=',', rating_scale=(0,1), skip_lines=0)
-        self.data = dataset.Dataset.load_from_file(self.surprise_file_path, reader=reader)
-        self.data.split(n_folds=5)
+        self.datasets = [dataset.Dataset.load_from_file(self.surprise_file_path, reader=reader) for _ in range(self.no_of_folds)]
+        
+        ratings = self.datasets[0].raw_ratings
+        ratings_exclude_size = len(ratings)//self.no_of_folds
+        for idx, dataset in enumerate(self.datasets):
+            dataset.raw_ratings = [ele for idx, ele in enumerate(dataset.raw_ratings) if i not in range(idx*ratings_exclude_size, (idx+1)*ratings_exclude_size)]
 
-    def eval(self):
-        # Evaluate performances of our algorithm on the dataset.
-        perf = evaluate(self.svd, self.data, measures=['RMSE'])
-        print_perf(perf)
+        # No need to split if not evaluating
+        # for dataset in self.datasets:
+        #     data.split(n_folds=5)
 
-    def parameter_tuning(self):
-        param_grid = {'n_epochs': [20, 40], 'lr_all': [0.002, 0.005],
-                      'reg_all': [0.01, 0.02, 0.04], 'n_factors': [20, 50, 100]}
+    # TODO: Eval method after doing n models
+    # def eval(self):
+    #     # Evaluate performances of our algorithm on the dataset.
+    #     perf = evaluate(self.svd, self.data, measures=['RMSE'])
+    #     print_perf(perf)
 
-        print("Starting grid search...")
-        start_time = time.perf_counter()
-        self.grid_search = GridSearch(SVD, param_grid, measures=['RMSE'])
-        self.grid_search.evaluate(self.data)
-        print('Grid search took {}s'.format(time.perf_counter() - start_time))
+    # def parameter_tuning(self):
+    #     param_grid = {'n_epochs': [20, 40], 'lr_all': [0.002, 0.005],
+    #                   'reg_all': [0.01, 0.02, 0.04], 'n_factors': [20, 50, 100]}
 
-        self.svd = self.grid_search.best_estimator['RMSE']
+    #     print("Starting grid search...")
+    #     start_time = time.perf_counter()
+    #     self.grid_search = GridSearch(SVD, param_grid, measures=['RMSE'])
+    #     self.grid_search.evaluate(self.data)
+    #     print('Grid search took {}s'.format(time.perf_counter() - start_time))
 
-        print(self.grid_search.best_score['RMSE'])
-        print(self.grid_search.best_params['RMSE'])
+    #     self.svd = self.grid_search.best_estimator['RMSE']
+
+    #     print(self.grid_search.best_score['RMSE'])
+    #     print(self.grid_search.best_params['RMSE'])
 
     def train(self):
-        trainset = self.data.build_full_trainset()
-        self.svd.train(trainset)
+        trainsets = [d.build_full_trainset() for d in self.datasets]
+        [self.svds[idx].train(trainsets[idx]) for idx in range(self.no_of_folds)] 
 
-    def _predict(self, user_lst, item_lst):
+    def _predict(self, svd, user_lst, item_lst):
         assert len(user_lst) == len(item_lst)
 
         # gets predictions
         lst_length = len(user_lst)
 
-        pred = [self.svd.predict(str(user_lst[idx]), str(item_lst[idx])) for idx in range(lst_length)]
+        pred = [svd.predict(str(user_lst[idx]), str(item_lst[idx])) for idx in range(lst_length)]
         prediction, unseen = zip(*([(est, details['was_impossible']) for (_, _, _, est, details) in pred]))
 
         # Replace unseen with number 0, 1, 2 based on whether user, item
-        unseen = [sum([self.svd.trainset.knows_user(user_lst[i]), 
-                       self.svd.trainset.knows_item(item_lst[i])]) for i in range(len(user_lst))]
+        unseen = [sum([svd.trainset.knows_user(user_lst[i]), 
+                       svd.trainset.knows_item(item_lst[i])]) for i in range(len(user_lst))]
         return prediction, unseen
 
-    def get_predictions(self, test_file_path):
-        """Use trained model on test file
+    def get_predictions_on_same_dataset():
+        predictions = []
+        unseens = []
+        data = dataset.Dataset.load_from_file(self.surprise_file_path, reader=reader)
+        ratings = data.raw_ratings
+        ratings_test_size = len(ratings)//self.no_of_folds
+        for idx, svd in enumerate(self.svds):
+            test_data = [ele for idx, ele in enumerate(ratings) if i in range(idx*ratings_exclude_size, (idx+1)*ratings_exclude_size)]
+            user_lst, item_lst, score_lst = zip(*test_data)
+            prediction, unseen = self._predict(svd, user_lst, item_lst)
 
-        Arguments:
-            test_file_path: String 
-                location of test file
-        """
-        data = pd.read_csv(test_file_path)
-        user_lst, item_lst = data['user_id'].tolist(), data[self.item_identifier].tolist()
-        predictions, unseen = self._predict(user_lst, item_lst)
+            predictions.extend(prediction)
+            unseens.extend(unseen)
+
         return {"{}_svd".format(self.item_identifier): predictions,
                 "{}_unseen".format(self.item_identifier): unseen}
+
+    # def get_predictions(self, test_file_path):
+    #     """Use trained model on test file
+
+    #     Arguments:
+    #         test_file_path: String 
+    #             location of test file
+    #     """
+    #     data = pd.read_csv(test_file_path)
+    #     user_lst, item_lst = data['user_id'].tolist(), data[self.item_identifier].tolist()
+
+          # NEED TO EDIT THIS SECTION TO BLEND PREDICTIONS
+    #     predictions, unseen = self._predict(svd???, user_lst, item_lst)
+    #     return {"{}_svd".format(self.item_identifier): predictions,
+    #             "{}_unseen".format(self.item_identifier): unseen}
 
 def make_sfb(item_identifier, train_file_path, model_name="", user_min_occurrence=20, item_min_occurrence=20):
     """Make a SurpriseFeatureBuilder trained on the given file
@@ -165,6 +200,6 @@ def make_sfb(item_identifier, train_file_path, model_name="", user_min_occurrenc
 
 if __name__ == '__main__':
     media_sfb = make_sfb('media_id', TRAIN_FILE_PATH, user_min_occurrence=20, item_min_occurrence=20)
-    media_sfb.parameter_tuning()
+    media_sfb.get_predictions(TRAIN_FILE_PATH)
     pickle.dump(sfb, open(model_pickle_name, "wb"))
 
