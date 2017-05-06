@@ -21,28 +21,6 @@ import pandas as pd
 import time
 from datetime import datetime
 
-<<<<<<< HEAD
-INPUT_TRAIN_FILE_PATH = "./data/archive/train.csv"
-INPUT_TEST_FILE_PATH = "./data//archive/test.csv"
-OUTPUT_CLEAN_FILE_PATH = "./data/archive/train_clean.csv"
-OUTPUT_TEST_FILE_PATH = "./data/archive/test_clean.csv"
-OUTPUT_TRAIN_TEST_PATH = "./data/archive/train_test.csv"
-OUTPUT_TRAIN_EMSEMBLE_PATH = "./data/archive/train_ensemble.csv"
-
-
-def add_fresh(df):
-    freshness= []
-    for nrow in range (len(df.index)):
-        #release_date
-        td1 = df["release_date"][nrow]
-        td1 = datetime.strptime(str(td1), "%Y%m%d").date()
-        #ts_listen
-        td2 = datetime.fromtimestamp(int(df["ts_listen"][nrow])).date()
-        curr = int((td2 - td1).days)
-        freshness.append(curr)
-        print(nrow)
-    df['freshness'] = freshness
-=======
 INPUT_TRAIN_FILE_PATH      = "./data/archive/train.csv"
 INPUT_TEST_FILE_PATH       = "./data/archive/test.csv"
 OUTPUT_TRAIN_FILE_PATH     = "./data/archive/train_clean.csv"
@@ -89,7 +67,6 @@ def _add_features(df):
     df = _add_user_item_count(df, 'genre_id')
     df = _add_user_item_count(df, 'album_id')
     df = _add_user_item_count(df, 'artist_id')
->>>>>>> 5c36a44f726edb173eaa530cf2d8dcaaf6298ceb
     return df
 
 def process_file(input_file_path, output_file_path):
@@ -122,23 +99,8 @@ def split_train_set(train_df, frac, output_train_file_path, output_validation_fi
 
 
 if __name__ == '__main__':
-<<<<<<< HEAD
-    train_df = pd.read_csv(INPUT_TRAIN_FILE_PATH)
-    test_df = pd.read_csv(INPUT_TEST_FILE_PATH)
-    train_output = add_fresh(train_df)
-    test_output = add_fresh(test_df)
-
-    #split
-    train_output.to_csv(OUTPUT_CLEAN_FILE_PATH)
-    test_output.to_csv(OUTPUT_TEST_FILE_PATH )
-    train = train_output.sample(frac = 0.9)
-    train.to_csv(OUTPUT_TRAIN_TEST_PATH)
-    test = train_output.drop(train.index)
-    test.to_csv(OUTPUT_TRAIN_EMSEMBLE_PATH)
-=======
     clean_test_df = process_file(INPUT_TEST_FILE_PATH, OUTPUT_TEST_FILE_PATH)
     clean_train_df = process_file(INPUT_TRAIN_FILE_PATH, OUTPUT_TRAIN_FILE_PATH)
     split_train_set(clean_train_df, 0.9, OUTPUT_TRAIN_TEST_PATH, OUTPUT_VALIDATION_PATH)
->>>>>>> 5c36a44f726edb173eaa530cf2d8dcaaf6298ceb
 
 
