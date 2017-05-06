@@ -27,7 +27,7 @@ def lightgbm_model(X, y):
     train_data = lgb.Dataset(X_train, label=y_train)
     test_data = lgb.Dataset(X_val, label=y_val)
 
-    param = {'learning_rate': 0.05,
+    param = {'learning_rate': 0.2,
         'num_leaves': 256,
         'max_depth': 7,
         'feature_fraction': 1,
@@ -36,7 +36,7 @@ def lightgbm_model(X, y):
         'objective':'binary',
     }
     param['metric'] = ['binary_logloss', 'auc']
-    num_round = 1000
+    num_round = 500
     bst = lgb.train(param,
                     train_data,
                     num_round,

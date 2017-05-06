@@ -168,7 +168,15 @@ class DeezerAPI(object):
         # Checks length and input to JSON file every 1 minute
             while queue.qsize() != 0:
                 time.sleep(10)
-                print(len(attr_json))
+                length = float(len(attr_json))
+                
+                print(length)
+                if length > 1000 and length % 10000 < 100:
+                    print('Saving JSON cuz i kiasu')
+                    self.attr_json.update(attr_json)
+                    with open(filepath, 'w') as outfile:
+                        json.dump(self.attr_json, outfile)
+ 
             
             print("DONE")
             self.attr_json.update(attr_json)
@@ -185,11 +193,11 @@ class DeezerAPI(object):
             print("Safe to exit")
         
 if __name__ == '__main__':
-    #deezer = DeezerAPI('track', 'media_id')
-    deezer = DeezerAPI('user', 'user_id') #1 guy do this   
+   # deezer = DeezerAPI('track', 'media_id')
+   # deezer = DeezerAPI('user', 'user_id') #1 guy do this   
     #deezer = DeezerAPI('album', 'album_id') #1 guy do this
-    deezer = DeezerAPI('artist', 'artist_id') #1 guy do this
-    deezer = DeezerAPI('genre', 'genre_id') #1 guy do this
+    #deezer = DeezerAPI('artist', 'artist_id') #1 guy do this
+    #deezer = DeezerAPI('genre', 'genre_id') #1 guy do this
 
 
 
