@@ -51,30 +51,39 @@ def _add_freshness(df):
     df = df.assign(freshness=freshness)
     return df
 
-def _add_user_item_count(df, item_identifier):
+def _get_user_item_count(df, item_identifier):
     """Add user item count to dataframe. 
 
     User item count is number of times user-item pairs. This indicates the amount of information given to
     the SVD model.
     """
-    user_item_count = df.groupby(['user_id', item_identifier])['user_id'].transform('count')
-    df = df.assign(**{'user_{}'.format(item_identifier): user_item_count})
+    user_item_count = df.groupby(['user_id', item_identifier])['user_id'].count()
+    user_item_count.name = '{} count'.format(item_identifier)
+    return user_item_count
+
+def _add_user_item_count(df, user_item_count, item_identifier):
+    df = df.join(user_item_count, on=['user_id', 'media_id'])
     return df
 
-def _add_features(df):
-    df = _add_freshness(df)
-    df = _add_user_item_count(df, 'media_id')
-    df = _add_user_item_count(df, 'genre_id')
-    df = _add_user_item_count(df, 'album_id')
-    df = _add_user_item_count(df, 'artist_id')
-    return df
+def process_files(input_train_file_path, output_train_file_path, input_test_file_path, output_test_file_path):
+    """Reads files, adds features, then outputs data"""
+    
+    train_df = pd.read_csv(input_train_file_path)
+    test_df = pd.read_csv(input_train_file_path)
 
-def process_file(input_file_path, output_file_path):
-    df = pd.read_csv(input_file_path)
-    clean_df = _add_features(df)
-    clean_df.to_csv(output_file_path)
-    print("File at {} cleaned and written to {}".format(input_file_path, output_file_path))
-    return clean_df
+    for item_identifier in ['media_id', 'genre_id', 'album_id', 'artist_id']:
+        user_item_count = _get_user_item_count(train_df, item_identifier)
+        train_df = _add_user_item_count(train_df, user_item_count, item_identifier)
+        test_df = _add_user_item_count(test_df, user_item_count, item_identifier)
+
+    train_df = _add_freshness(train_df)
+    test_df = _add_freshness(test_df)
+
+    train_df.to_csv(output_train_file_path)
+    test_df.to_csv(output_test_file_path)
+    print("File at {} cleaned and written to {}".format(input_train_file_path, output_train_file_path))
+    print("File at {} cleaned and written to {}".format(input_test_file_path, output_test_file_path))
+    return train_df, test_df
 
 def split_train_set(train_df, frac, output_train_file_path, output_validation_file_path):
     """Splits train set into training and validation set
@@ -99,8 +108,7 @@ def split_train_set(train_df, frac, output_train_file_path, output_validation_fi
 
 
 if __name__ == '__main__':
-    clean_test_df = process_file(INPUT_TEST_FILE_PATH, OUTPUT_TEST_FILE_PATH)
-    clean_train_df = process_file(INPUT_TRAIN_FILE_PATH, OUTPUT_TRAIN_FILE_PATH)
+    clean_train_df, clean_test_df = process_files(INPUT_TRAIN_FILE_PATH, OUTPUT_TRAIN_FILE_PATH, INPUT_TEST_FILE_PATH, OUTPUT_TEST_FILE_PATH)
     split_train_set(clean_train_df, 0.9, OUTPUT_TRAIN_TEST_PATH, OUTPUT_VALIDATION_PATH)
 
 
