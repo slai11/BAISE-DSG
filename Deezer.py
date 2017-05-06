@@ -193,11 +193,19 @@ class DeezerAPI(object):
             print("Safe to exit")
         
 if __name__ == '__main__':
+<<<<<<< HEAD
    # deezer = DeezerAPI('track', 'media_id')
    # deezer = DeezerAPI('user', 'user_id') #1 guy do this   
     #deezer = DeezerAPI('album', 'album_id') #1 guy do this
     #deezer = DeezerAPI('artist', 'artist_id') #1 guy do this
     #deezer = DeezerAPI('genre', 'genre_id') #1 guy do this
+=======
+    #deezer = DeezerAPI('track', 'media_id')
+    deezer = DeezerAPI('user', 'user_id') #1 guy do this   
+    #deezer = DeezerAPI('album', 'album_id') #1 guy do this
+    deezer = DeezerAPI('artist', 'artist_id') #1 guy do this
+    deezer = DeezerAPI('genre', 'genre_id') #1 guy do this
+>>>>>>> 5c36a44f726edb173eaa530cf2d8dcaaf6298ceb
 
 
 
