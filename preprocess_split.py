@@ -13,12 +13,12 @@ import pandas as pd
 import time
 from datetime import datetime
 
-INPUT_TRAIN_FILE_PATH = "./data/train.csv"
-INPUT_TEST_FILE_PATH = "./data/test.csv"
-OUTPUT_CLEAN_FILE_PATH = "./data/train_clean.csv"
-OUTPUT_TEST_FILE_PATH = "./data/test_clean.csv"
-OUTPUT_TRAIN_TEST_PATH = "./data/train_test.csv"
-OUTPUT_TRAIN_EMSEMBLE_PATH = "./data/train_ensemble.csv"
+INPUT_TRAIN_FILE_PATH = "./data/archive/train.csv"
+INPUT_TEST_FILE_PATH = "./data//archive/test.csv"
+OUTPUT_CLEAN_FILE_PATH = "./data/archive/train_clean.csv"
+OUTPUT_TEST_FILE_PATH = "./data/archive/test_clean.csv"
+OUTPUT_TRAIN_TEST_PATH = "./data/archive/train_test.csv"
+OUTPUT_TRAIN_EMSEMBLE_PATH = "./data/archive/train_ensemble.csv"
 
 
 def add_fresh(df):
@@ -44,7 +44,7 @@ if __name__ == '__main__':
     #split
     train_output.to_csv(OUTPUT_CLEAN_FILE_PATH)
     test_output.to_csv(OUTPUT_TEST_FILE_PATH )
-    train = train_output.sample(frac = 0.5)
+    train = train_output.sample(frac = 0.9)
     train.to_csv(OUTPUT_TRAIN_TEST_PATH)
     test = train_output.drop(train.index)
     test.to_csv(OUTPUT_TRAIN_EMSEMBLE_PATH)
