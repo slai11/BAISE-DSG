@@ -57,19 +57,19 @@ def _get_user_item_count(df, item_identifier):
     User item count is number of times user-item pairs. This indicates the amount of information given to
     the SVD model.
     """
-    user_item_count = df.groupby(['user_id', item_identifier])['user_id'].count()
+    user_item_count = df.groupby(['user_id'])[item_identifier].nunique()
     user_item_count.name = '{} count'.format(item_identifier)
     return user_item_count
 
 def _add_user_item_count(df, user_item_count, item_identifier):
-    df = df.join(user_item_count, on=['user_id', 'media_id'])
+    df = df.join(user_item_count, on='user_id')
     return df
 
 def process_files(input_train_file_path, output_train_file_path, input_test_file_path, output_test_file_path):
     """Reads files, adds features, then outputs data"""
     
     train_df = pd.read_csv(input_train_file_path)
-    test_df = pd.read_csv(input_train_file_path)
+    test_df = pd.read_csv(input_test_file_path)
 
     for item_identifier in ['media_id', 'genre_id', 'album_id', 'artist_id']:
         user_item_count = _get_user_item_count(train_df, item_identifier)
@@ -79,8 +79,8 @@ def process_files(input_train_file_path, output_train_file_path, input_test_file
     train_df = _add_freshness(train_df)
     test_df = _add_freshness(test_df)
 
-    train_df.to_csv(output_train_file_path)
-    test_df.to_csv(output_test_file_path)
+    train_df.to_csv(output_train_file_path, index=None)
+    test_df.to_csv(output_test_file_path, index=None)
     print("File at {} cleaned and written to {}".format(input_train_file_path, output_train_file_path))
     print("File at {} cleaned and written to {}".format(input_test_file_path, output_test_file_path))
     return train_df, test_df
@@ -102,9 +102,9 @@ def split_train_set(train_df, frac, output_train_file_path, output_validation_fi
             validation set will be written to this file path
     """
     train = train_df.sample(frac = frac)
-    train.to_csv(output_train_file_path)
+    train.to_csv(output_train_file_path, index=None)
     validation = train.drop(train.index)
-    validation.to_csv(output_validation_file_path)
+    validation.to_csv(output_validation_file_path, index=None)
 
 
 if __name__ == '__main__':
