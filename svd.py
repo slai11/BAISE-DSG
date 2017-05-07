@@ -25,7 +25,7 @@ For example,
 
 """
 
-TRAIN_FILE_PATH = "data/archive/train.csv"
+TRAIN_FILE_PATH = "data/archive/temp.csv"
 TEST_FILE_PATH = "data/archive/test.csv"
 TEMP_FILE_PATH = "data/archive/{}-train_surprise_format.csv"
 
@@ -52,7 +52,7 @@ def make_sfb(item_identifier, train_file_path, model_name="", user_min_occurrenc
         sfb: SurpriseFeatureBuilder object
             sfb trained on train file
     """
-    model_pickle_name = "pickled_models/{}_{}.p".format(model_name, item_identifier)
+    model_pickle_name = "pickles/{}_{}.p".format(model_name, item_identifier)
     try:
         sfb = pickle.load(open(model_pickle_name, "rb" ))
     except FileNotFoundError:
@@ -64,9 +64,9 @@ def make_sfb(item_identifier, train_file_path, model_name="", user_min_occurrenc
     return sfb
 
 def mini_train(pair):
-    svd = pair[0]
-    sub_trainset = pair[1]
+    svd, sub_trainset = pair
     svd.train(sub_trainset)
+    return svd
 
 class SurpriseFeatureBuilder():
     def __init__(self, item_identifier='media_id', train_file_path=TRAIN_FILE_PATH, temp_file_path=TEMP_FILE_PATH, 
@@ -178,7 +178,7 @@ class SurpriseFeatureBuilder():
 
         self.main_svd.train(main_trainset)
         with Pool(4) as p:
-            p.map(mini_train, [[self.sub_svds[i], sub_trainsets[i]] for i in range(self.no_of_folds)])
+            self.sub_svds = p.map(mini_train, [[self.sub_svds[i], sub_trainsets[i]] for i in range(self.no_of_folds)])
 
         self.is_trained = True
 
@@ -239,7 +239,7 @@ class SurpriseFeatureBuilder():
 
 if __name__ == '__main__':
     media_sfb = make_sfb('media_id', TRAIN_FILE_PATH, user_min_occurrence=20, item_min_occurrence=20, no_of_folds=4)
-    # media_sfb.get_predictions(TRAIN_FILE_PATH)
+    media_sfb.get_predictions(TRAIN_FILE_PATH)
     media_sfb.get_predictions(TEST_FILE_PATH)
     user_baseline, item_baseline, user_vectors, item_vectors = media_sfb.get_latent_features()[0]
     print(user_vectors)
