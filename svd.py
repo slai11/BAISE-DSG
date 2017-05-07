@@ -25,7 +25,7 @@ For example,
 
 """
 
-TRAIN_FILE_PATH = "data/archive/temp.csv"
+TRAIN_FILE_PATH = "data/archive/train.csv"
 TEST_FILE_PATH = "data/archive/test.csv"
 TEMP_FILE_PATH = "data/archive/{}-train_surprise_format.csv"
 
