@@ -165,12 +165,12 @@ class SurpriseFeatureBuilder():
         ratings = self.sub_datasets[0].raw_ratings
 
         if self.no_of_folds > 1:
-            self.ratings_exclude_size = len(ratings)//self.no_of_folds
+            self.ratings_exclude_size = len(ratings)//self.no_of_folds+1
         else:
             self.ratings_exclude_size = 0
 
         for idx, data in enumerate(self.sub_datasets):
-            data.raw_ratings = [ele for idx, ele in enumerate(data.raw_ratings) if idx not in range(idx*self.ratings_exclude_size, (idx+1)*self.ratings_exclude_size)]
+            data.raw_ratings = [ele for i, ele in enumerate(data.raw_ratings) if i not in range(idx*self.ratings_exclude_size, (idx+1)*self.ratings_exclude_size)]
 
     def train(self):
         main_trainset = self.main_dataset.build_full_trainset()
@@ -203,7 +203,7 @@ class SurpriseFeatureBuilder():
         unseens = []
         ratings = self.main_dataset.raw_ratings
         for idx, svd in enumerate(self.sub_svds):
-            test_data = [ele for idx, ele in enumerate(ratings) if idx in range(idx*self.ratings_exclude_size, (idx+1)*self.ratings_exclude_size)]
+            test_data = [ele for i, ele in enumerate(ratings) if i in range(idx*self.ratings_exclude_size, (idx+1)*self.ratings_exclude_size)]
             user_lst, item_lst, score_lst, _ = zip(*test_data)
             prediction, unseen = self._predict(svd, user_lst, item_lst)
 
