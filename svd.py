@@ -19,7 +19,7 @@ How to use?
 
 For example,
 
-> my_sfb = make_sfb('media_id', TRAIN_FILE_PATH, user_min_occurrence=20, item_min_occurrence=20, number_of_folds=1)
+> my_sfb = make_sfb('media_id', TRAIN_FILE_PATH, user_min_occurrence=20, item_min_occurrence=20, no_of_folds=1)
 > my_sfb.get_predictions(TRAIN_FILE_PATH)
 > user_baseline, item_baseline, user_vectors. item_vectors = my_sfb.get_latent_features()[0]
 
@@ -57,7 +57,7 @@ def make_sfb(item_identifier, train_file_path, model_name="", user_min_occurrenc
         sfb = pickle.load(open(model_pickle_name, "rb" ))
     except FileNotFoundError:
         sfb = SurpriseFeatureBuilder(item_identifier, train_file_path, 
-            TEMP_FILE_PATH.format(item_identifier), 
+            TEMP_FILE_PATH, 
             user_min_occurrence, item_min_occurrence, no_of_folds)
         sfb.delete_surprise_file()
         pickle.dump(sfb, open(model_pickle_name, "wb"))
@@ -105,7 +105,8 @@ class SurpriseFeatureBuilder():
 
         self.item_identifier = item_identifier
         self.train_file_path = train_file_path
-        self.temp_file_path = temp_file_path
+        self.temp_file_path = temp_file_path.format(item_identifier)
+        self.temp_file_paths = [temp_file_path.format(item_identifier + str(idx)) for idx in range(no_of_folds)]
         self.user_min_occurrence = user_min_occurrence
         self.item_min_occurrence = item_min_occurrence
         self.no_of_folds = no_of_folds
@@ -130,19 +131,29 @@ class SurpriseFeatureBuilder():
             item_min_occurrence: int
                 item must appear at least this number of times to be included
         """
+        def filter_and_write_df(data, file_path):
+
+            filtered_data = (
+                data.groupby('user_id').filter(lambda x: len(x) >= user_min_occurrence)
+                    .groupby(self.item_identifier).filter(lambda x: len(x) >= item_min_occurrence)
+                    .groupby(['user_id', self.item_identifier]).mean()
+                )
+
+            print(filtered_data.shape)
+            filtered_data.to_csv(path_or_buf=file_path, columns=['is_listened'], header=False, index=True)
+
         if user_min_occurrence==None:
             user_min_occurrence = self.user_min_occurrence
         if item_min_occurrence==None:
             item_min_occurrence = self.item_min_occurrence
         data = pd.read_csv(self.train_file_path)
-        filtered_data = (
-            data.groupby('user_id').filter(lambda x: len(x) >= user_min_occurrence)
-                .groupby(self.item_identifier).filter(lambda x: len(x) >= item_min_occurrence)
-                .groupby(['user_id', self.item_identifier]).mean()
-            )
+        filter_and_write_df(data, self.temp_file_path)
+        self.ratings_exclude_size = len(data.index)//self.no_of_folds+1
 
-        print(filtered_data.shape)
-        filtered_data.to_csv(path_or_buf=self.temp_file_path, columns=['is_listened'], header=False, index=True)
+        for data_idx in range(self.no_of_folds):
+            subset_data = data.iloc[data_idx*self.ratings_exclude_size:(data_idx+1)*self.ratings_exclude_size]
+            filter_and_write_df(subset_data, self.temp_file_paths[data_idx])
+
 
     def make_file_if_missing(self):
         if not Path(self.temp_file_path).is_file():
@@ -154,24 +165,16 @@ class SurpriseFeatureBuilder():
     def delete_surprise_file(self):
         if Path(self.temp_file_path).is_file():
             os.remove(self.temp_file_path)
+            for path in self.temp_file_paths:
+                os.remove(path)
 
     def read_data(self):
         """Read data from temp file in surprise format and perform k fold splitting on data"""
         reader = dataset.Reader(line_format="user item rating", sep=',', rating_scale=(0,1), skip_lines=0)
 
         self.main_dataset = dataset.Dataset.load_from_file(self.temp_file_path, reader=reader)
-        self.sub_datasets = [dataset.Dataset.load_from_file(self.temp_file_path, reader=reader) for _ in range(self.no_of_folds)]
+        self.sub_datasets = [dataset.Dataset.load_from_file(self.temp_file_paths[idx], reader=reader) for idx in range(self.no_of_folds)]
         
-        ratings = self.sub_datasets[0].raw_ratings
-
-        if self.no_of_folds > 1:
-            self.ratings_exclude_size = len(ratings)//self.no_of_folds+1
-        else:
-            self.ratings_exclude_size = 0
-
-        for idx, data in enumerate(self.sub_datasets):
-            data.raw_ratings = [ele for i, ele in enumerate(data.raw_ratings) if i not in range(idx*self.ratings_exclude_size, (idx+1)*self.ratings_exclude_size)]
-
     def train(self):
         main_trainset = self.main_dataset.build_full_trainset()
         sub_trainsets = [d.build_full_trainset() for d in self.sub_datasets]
@@ -201,17 +204,19 @@ class SurpriseFeatureBuilder():
 
         predictions = []
         unseens = []
-        ratings = self.main_dataset.raw_ratings
-        for idx, svd in enumerate(self.sub_svds):
-            test_data = [ele for i, ele in enumerate(ratings) if i in range(idx*self.ratings_exclude_size, (idx+1)*self.ratings_exclude_size)]
-            user_lst, item_lst, score_lst, _ = zip(*test_data)
+
+        data = pd.read_csv(self.train_file_path)
+
+        for data_idx in range(self.no_of_folds):
+            svd = self.sub_svds[data_idx]
+            subset_data = data.iloc[data_idx*self.ratings_exclude_size:(data_idx+1)*self.ratings_exclude_size]
+            user_lst, item_lst = subset_data['user_id'].tolist(), subset_data[self.item_identifier].tolist()
             prediction, unseen = self._predict(svd, user_lst, item_lst)
 
             predictions.extend(prediction)
             unseens.extend(unseen)
-
         return {"{}_svd".format(self.item_identifier): predictions,
-                "{}_unseen".format(self.item_identifier): unseen}
+                "{}_unseen".format(self.item_identifier): unseens}
 
     def get_predictions(self, test_file_path):
         """Use trained model on test file

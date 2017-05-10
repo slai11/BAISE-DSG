@@ -50,5 +50,5 @@ if __name__ == '__main__':
     test = pd.concat((test, y_prob), axis=1)
     
     # save to submission
-    test[['sample_id', 'is_listened']].to_csv('{} submission.csv'.format(str(datetime.now())[:-10]), index=False)
+    test[['sample_id', 'is_listened']].to_csv('submission.csv', index=False)
 
