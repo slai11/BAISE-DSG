@@ -151,7 +151,7 @@ class SurpriseFeatureBuilder():
         self.ratings_exclude_size = len(data.index)//self.no_of_folds+1
 
         for data_idx in range(self.no_of_folds):
-            subset_data = data.iloc[data_idx*self.ratings_exclude_size:(data_idx+1)*self.ratings_exclude_size]
+            subset_data = data.drop(data.index[data_idx*self.ratings_exclude_size:(data_idx+1)*self.ratings_exclude_size])
             filter_and_write_df(subset_data, self.temp_file_paths[data_idx])
 
 
